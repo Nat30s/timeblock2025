@@ -38,11 +38,18 @@
   </header>
 
   <main class="max-w-full mx-auto px-4 py-6">
-    <div id="grid" class="w-full overflow-x-auto">
-      </div>
+    <div id="grid" class="w-full overflow-x-auto"></div>
     <div class="mt-4 flex justify-center">
         <button id="addSlotBtn" class="px-4 py-2 text-sm rounded-lg bg-white border shadow-sm hover:bg-gray-50"><i class="fas fa-plus mr-2 text-xs"></i>Add Time Slot</button>
     </div>
+    <!-- Trello-like Task Board -->
+    <section id="task-board" class="mt-10">
+      <h2 class="text-lg font-semibold mb-2">Task Board</h2>
+      <div id="board-tasks" class="flex flex-wrap gap-3 min-h-[80px] bg-white border rounded-lg p-4 shadow-sm">
+        <!-- Task cards will be rendered here -->
+      </div>
+      <div class="mt-2 text-xs text-gray-500">Drag tasks from here to the planner above.</div>
+    </section>
   </main>
 
   <div id="task-modal" class="fixed inset-0 bg-black/50 hidden items-center justify-center" role="dialog" aria-modal="true">
@@ -122,14 +129,84 @@
 
     // ---------- App Rendering ----------
     function renderApp() {
-        $('#grid').innerHTML = '';
-        $('#view-header').innerHTML = '';
-        if (currentView === 'week') {
-            buildWeekView(displayedDate);
-        } else if (currentView === 'day') {
-            buildDayView(displayedDate);
+    $('#grid').innerHTML = '';
+    $('#view-header').innerHTML = '';
+    if (currentView === 'week') {
+      buildWeekView(displayedDate);
+    } else if (currentView === 'day') {
+      buildDayView(displayedDate);
+    }
+    renderTasks();
+    renderTaskBoard();
+    // ---------- Task Board Rendering ----------
+    function renderTaskBoard() {
+      const board = document.getElementById('board-tasks');
+      board.innerHTML = '';
+      state.tasks.forEach(task => {
+        if (!task.day && !task.slot) { // Only show tasks not assigned to planner
+          const card = createTaskCard(task);
+          card.classList.add('task-card');
+          card.setAttribute('draggable', 'true');
+          card.dataset.id = task.id;
+          board.appendChild(card);
         }
-        renderTasks();
+      });
+    }
+
+    // ---------- Drag & Drop Enhancements ----------
+    // Make board tasks draggable to planner slots
+    document.addEventListener('DOMContentLoaded', () => {
+      const board = document.getElementById('board-tasks');
+      board.addEventListener('dragstart', function(e) {
+        if (e.target.classList.contains('task-card')) {
+          e.dataTransfer.setData('text/plain', e.target.dataset.id);
+          e.target.classList.add('dragging');
+        }
+      });
+      board.addEventListener('dragend', function(e) {
+        if (e.target.classList.contains('task-card')) {
+          e.target.classList.remove('dragging');
+        }
+      });
+    });
+
+    // Enhance planner drop zones to accept board tasks
+    function enablePlannerDropZones() {
+      $$('.drop-zone').forEach(zone => {
+        zone.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          zone.classList.add('drop-highlight');
+        });
+        zone.addEventListener('dragleave', function() {
+          zone.classList.remove('drop-highlight');
+        });
+        zone.addEventListener('drop', function(e) {
+          e.preventDefault();
+          zone.classList.remove('drop-highlight');
+          const id = e.dataTransfer.getData('text/plain');
+          const task = state.tasks.find(t => t.id == id);
+          if (task) {
+            // Assign to this cell
+            const [day, slot] = zone.parentElement.id.replace('cell-','').split('__');
+            task.day = day;
+            task.slot = slot;
+            renderApp();
+          }
+        });
+      });
+    }
+
+    // Call enablePlannerDropZones after building grid
+    const origBuildWeekView = buildWeekView;
+    buildWeekView = function(date) {
+      origBuildWeekView(date);
+      setTimeout(enablePlannerDropZones, 0);
+    }
+    const origBuildDayView = buildDayView;
+    buildDayView = function(date) {
+      origBuildDayView(date);
+      setTimeout(enablePlannerDropZones, 0);
+    }
     }
 
     // ---------- Grid Builders ----------
