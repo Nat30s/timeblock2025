@@ -38,6 +38,10 @@
   </header>
 
   <main class="max-w-full mx-auto px-4 py-6">
+    <div class="flex items-center justify-between mb-4">
+      <button id="addPlannerTaskBtn" class="px-3 py-1 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"><i class="fas fa-plus mr-1 text-xs"></i>Add Task</button>
+      <div></div>
+    </div>
     <div id="grid" class="w-full overflow-x-auto"></div>
     <div class="mt-4 flex justify-center">
         <button id="addSlotBtn" class="px-4 py-2 text-sm rounded-lg bg-white border shadow-sm hover:bg-gray-50"><i class="fas fa-plus mr-2 text-xs"></i>Add Time Slot</button>
@@ -457,11 +461,20 @@
         const cell = document.createElement('section');
         cell.id = cellId(day, slot.key);
         cell.className = 'bg-white rounded-xl border shadow-sm p-3';
-        cell.innerHTML = `
-            <div class="flex items-center justify-end mb-2">
-                <button class="add-btn text-gray-400 hover:text-gray-700" title="Add task"><i class="fas fa-plus text-xs"></i></button>
-            </div>
-            <div class="drop-zone min-h-[100px] space-y-3"></div>`;
+    cell.innerHTML = `
+      <div class="drop-zone min-h-[100px] space-y-3"></div>`;
+    // ---------- Add Task to Planner ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      const addPlannerTaskBtn = document.getElementById('addPlannerTaskBtn');
+      if (addPlannerTaskBtn) {
+        addPlannerTaskBtn.addEventListener('click', () => {
+          currentTarget.day = null;
+          currentTarget.slot = null;
+          currentTarget.editingId = null;
+          openModal();
+        });
+      }
+    });
         attachTaskDnD(cell.querySelector('.drop-zone'));
         cell.querySelector('.add-btn').addEventListener('click', () => {
             currentTarget.day = day; currentTarget.slot = slot.key; currentTarget.editingId = null; openModal();
