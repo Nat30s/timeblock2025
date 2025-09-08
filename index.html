@@ -44,7 +44,10 @@
     </div>
     <!-- Trello-like Task Board -->
     <section id="task-board" class="mt-10">
-      <h2 class="text-lg font-semibold mb-2">Task Board</h2>
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-semibold">Task Board</h2>
+        <button id="addBoardTaskBtn" class="px-3 py-1 text-sm rounded-lg bg-blue-600 text-white hover:bg-blue-700"><i class="fas fa-plus mr-1 text-xs"></i>Add Task</button>
+      </div>
       <div id="board-columns" class="flex gap-4 min-h-[120px] bg-white border rounded-lg p-4 shadow-sm overflow-x-auto">
         <!-- Columns will be rendered here -->
       </div>
@@ -87,6 +90,18 @@
   </template>
 
   <script>
+    // ---------- Add Task to Board ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      const addBoardTaskBtn = document.getElementById('addBoardTaskBtn');
+      if (addBoardTaskBtn) {
+        addBoardTaskBtn.addEventListener('click', () => {
+          currentTarget.day = null;
+          currentTarget.slot = null;
+          currentTarget.editingId = null;
+          openModal();
+        });
+      }
+    });
     // ---------- Config ----------
     const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
     const DEFAULT_SLOTS = [
