@@ -45,10 +45,10 @@
     <!-- Trello-like Task Board -->
     <section id="task-board" class="mt-10">
       <h2 class="text-lg font-semibold mb-2">Task Board</h2>
-      <div id="board-tasks" class="flex flex-wrap gap-3 min-h-[80px] bg-white border rounded-lg p-4 shadow-sm">
-        <!-- Task cards will be rendered here -->
+      <div id="board-columns" class="flex gap-4 min-h-[120px] bg-white border rounded-lg p-4 shadow-sm overflow-x-auto">
+        <!-- Columns will be rendered here -->
       </div>
-      <div class="mt-2 text-xs text-gray-500">Drag tasks from here to the planner above.</div>
+      <div class="mt-2 text-xs text-gray-500">Drag tasks between columns or to the planner above.</div>
     </section>
   </main>
 
@@ -140,17 +140,65 @@
     renderTaskBoard();
     // ---------- Task Board Rendering ----------
     function renderTaskBoard() {
-      const board = document.getElementById('board-tasks');
-      board.innerHTML = '';
+      const columns = document.getElementById('board-columns');
+      columns.innerHTML = '';
+      DEFAULT_SLOTS.forEach(slot => {
+        const col = document.createElement('div');
+        col.className = 'flex-1 min-w-[220px] bg-gray-50 rounded-lg p-2 border border-gray-200';
+        col.innerHTML = `<div class="font-semibold text-sm mb-2">${slot.label}</div>`;
+        col.dataset.slot = slot.key;
+        col.ondragover = e => { e.preventDefault(); col.classList.add('drop-highlight'); };
+        col.ondragleave = () => col.classList.remove('drop-highlight');
+        col.ondrop = function(e) {
+          e.preventDefault();
+          col.classList.remove('drop-highlight');
+          const id = e.dataTransfer.getData('text/plain');
+          const task = state.tasks.find(t => t.id == id);
+          if (task) {
+            task.slot = slot.key;
+            task.day = null;
+            renderApp();
+          }
+        };
+        // Render tasks for this slot (not assigned to planner)
+        state.tasks.forEach(task => {
+          if (!task.day && task.slot === slot.key) {
+            const card = createTaskCard(task);
+            card.classList.add('task-card');
+            card.setAttribute('draggable', 'true');
+            card.dataset.id = task.id;
+            col.appendChild(card);
+          }
+        });
+        columns.appendChild(col);
+      });
+      // Unassigned tasks (no slot) go in an "Unsorted" column
+      const unsorted = document.createElement('div');
+      unsorted.className = 'flex-1 min-w-[220px] bg-gray-50 rounded-lg p-2 border border-gray-200';
+      unsorted.innerHTML = `<div class="font-semibold text-sm mb-2">Unsorted</div>`;
+      unsorted.ondragover = e => { e.preventDefault(); unsorted.classList.add('drop-highlight'); };
+      unsorted.ondragleave = () => unsorted.classList.remove('drop-highlight');
+      unsorted.ondrop = function(e) {
+        e.preventDefault();
+        unsorted.classList.remove('drop-highlight');
+        const id = e.dataTransfer.getData('text/plain');
+        const task = state.tasks.find(t => t.id == id);
+        if (task) {
+          task.slot = null;
+          task.day = null;
+          renderApp();
+        }
+      };
       state.tasks.forEach(task => {
-        if (!task.day && !task.slot) { // Only show tasks not assigned to planner
+        if (!task.day && !task.slot) {
           const card = createTaskCard(task);
           card.classList.add('task-card');
           card.setAttribute('draggable', 'true');
           card.dataset.id = task.id;
-          board.appendChild(card);
+          unsorted.appendChild(card);
         }
       });
+      columns.appendChild(unsorted);
     }
 
     // ---------- Drag & Drop Enhancements ----------
